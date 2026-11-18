@@ -1,10 +1,11 @@
 import * as THREE from 'three'
-import { DEFAULT_PIT, generateBlocks } from './blockModel'
+import { DEFAULT_PIT, generateBlocks, type PitConfig } from './blockModel'
 import { createGround } from './ground'
 import { createLights, type Lights } from './lights'
 import { createTerrain, type Terrain } from './terrain'
 
 export interface PitScene {
+  config: PitConfig
   scene: THREE.Scene
   terrain: Terrain
   lights: Lights
@@ -35,5 +36,5 @@ export function createScene(): PitScene {
     lights.directional.dispose()
   }
 
-  return { scene, terrain, lights, dispose }
+  return { config, scene, terrain, lights, dispose }
 }

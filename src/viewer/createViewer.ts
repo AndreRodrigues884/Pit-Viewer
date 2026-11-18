@@ -1,7 +1,15 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { CameraRig, type CameraMode } from '../camera/CameraRig'
+import type { Block } from '../scene/blockModel'
 import { createScene } from '../scene/createScene'
+import { createHighlight } from '../selection/createHighlight'
+import { pickBlock } from '../selection/pickBlock'
+import { listenForClicks, toNormalizedPointer } from './pointer'
+
+export interface ViewerOptions {
+  onSelectBlock: (block: Block | null) => void
+}
 
 export interface ViewerHandle {
   setCameraMode: (mode: CameraMode) => void
@@ -9,7 +17,7 @@ export interface ViewerHandle {
   dispose: () => void
 }
 
-export function createViewer(container: HTMLElement): ViewerHandle {
+export function createViewer(container: HTMLElement, options: ViewerOptions): ViewerHandle {
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
@@ -17,6 +25,8 @@ export function createViewer(container: HTMLElement): ViewerHandle {
   container.appendChild(renderer.domElement)
 
   const pit = createScene()
+  const highlight = createHighlight(pit.config.blockSize)
+  pit.scene.add(highlight.object)
 
   const cameras = new CameraRig()
   cameras.perspective.position.set(38, 32, 38)
@@ -25,6 +35,17 @@ export function createViewer(container: HTMLElement): ViewerHandle {
   controls.enableDamping = true
   controls.target.set(0, 2, 0)
   controls.maxPolarAngle = Math.PI / 2 - 0.05
+
+  const raycaster = new THREE.Raycaster()
+  const pointer = new THREE.Vector2()
+
+  const stopListening = listenForClicks(renderer.domElement, (event) => {
+    toNormalizedPointer(event, renderer.domElement, pointer)
+    raycaster.setFromCamera(pointer, cameras.active)
+    const block = pickBlock(raycaster, pit.terrain)
+    highlight.show(block)
+    options.onSelectBlock(block)
+  })
 
   const resize = () => {
     const { clientWidth: width, clientHeight: height } = container
@@ -54,8 +75,10 @@ export function createViewer(container: HTMLElement): ViewerHandle {
     },
     dispose() {
       cancelAnimationFrame(frameId)
+      stopListening()
       resizeObserver.disconnect()
       controls.dispose()
+      highlight.dispose()
       pit.dispose()
       renderer.dispose()
       container.removeChild(renderer.domElement)

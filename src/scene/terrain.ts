@@ -7,6 +7,7 @@ const BLOCK_FILL = 0.96
 export interface Terrain {
   group: THREE.Group
   meshes: THREE.InstancedMesh[]
+  getBlock: (mesh: THREE.Object3D, instanceId: number) => Block | undefined
   dispose: () => void
 }
 
@@ -15,6 +16,7 @@ export function createTerrain(blocks: Block[], blockSize: number): Terrain {
   const geometry = new THREE.BoxGeometry(side, side, side)
   const group = new THREE.Group()
   const matrix = new THREE.Matrix4()
+  const blocksByMesh = new Map<THREE.Object3D, Block[]>()
 
   const meshes = BLOCK_TYPES.map((type) => {
     const typeBlocks = blocks.filter((block) => block.type === type)
@@ -28,6 +30,7 @@ export function createTerrain(blocks: Block[], blockSize: number): Terrain {
 
     mesh.castShadow = true
     mesh.receiveShadow = true
+    blocksByMesh.set(mesh, typeBlocks)
     group.add(mesh)
     return mesh
   })
@@ -40,5 +43,8 @@ export function createTerrain(blocks: Block[], blockSize: number): Terrain {
     })
   }
 
-  return { group, meshes, dispose }
+  const getBlock = (mesh: THREE.Object3D, instanceId: number) =>
+    blocksByMesh.get(mesh)?.[instanceId]
+
+  return { group, meshes, getBlock, dispose }
 }
