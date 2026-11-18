@@ -11,9 +11,20 @@ interface ViewerProps extends ViewerOptions {
   cameraMode: CameraMode
   shadows: boolean
   interactionMode: InteractionMode
+  digEnabled: boolean
+  showMineable: boolean
+  gameId: number
 }
 
-export function Viewer({ cameraMode, shadows, interactionMode, ...callbacks }: ViewerProps) {
+export function Viewer({
+  cameraMode,
+  shadows,
+  interactionMode,
+  digEnabled,
+  showMineable,
+  gameId,
+  ...callbacks
+}: ViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<ViewerHandle | null>(null)
   const callbacksRef = useRef(callbacks)
@@ -50,6 +61,18 @@ export function Viewer({ cameraMode, shadows, interactionMode, ...callbacks }: V
   useEffect(() => {
     viewerRef.current?.setInteractionMode(interactionMode)
   }, [interactionMode])
+
+  useEffect(() => {
+    viewerRef.current?.setDigEnabled(digEnabled)
+  }, [digEnabled])
+
+  useEffect(() => {
+    viewerRef.current?.setShowMineable(showMineable)
+  }, [showMineable])
+
+  useEffect(() => {
+    viewerRef.current?.resetGame()
+  }, [gameId])
 
   return <div ref={containerRef} className="viewer" />
 }

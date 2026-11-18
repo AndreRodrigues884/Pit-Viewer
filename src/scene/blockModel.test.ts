@@ -7,12 +7,14 @@ const blocks = generateBlocks(config)
 const blocksOnLevel = (level: number) => blocks.filter((block) => block.level === level)
 
 describe('generateBlocks', () => {
-  it('keeps the bottom level complete', () => {
-    expect(blocksOnLevel(0)).toHaveLength(config.size * config.size)
+  it('keeps every level below the pit bottom complete', () => {
+    for (let level = 0; level < config.pitBottomLevel; level++) {
+      expect(blocksOnLevel(level)).toHaveLength(config.size * config.size)
+    }
   })
 
   it('opens the pit wider on every level going up', () => {
-    for (let level = 2; level < config.levels; level++) {
+    for (let level = config.pitBottomLevel + 1; level < config.levels; level++) {
       expect(blocksOnLevel(level).length).toBeLessThan(blocksOnLevel(level - 1).length)
     }
   })

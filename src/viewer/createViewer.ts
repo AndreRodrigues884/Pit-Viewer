@@ -15,7 +15,7 @@ export type InteractionMode = 'select' | 'measure' | 'dig'
 export interface DigResult {
   block: Block
   mined: boolean
-  minedCount: number
+  minedBlocks: Block[]
 }
 
 export interface ViewerOptions {
@@ -28,6 +28,9 @@ export interface ViewerHandle {
   setCameraMode: (mode: CameraMode) => void
   setShadows: (enabled: boolean) => void
   setInteractionMode: (mode: InteractionMode) => void
+  setDigEnabled: (enabled: boolean) => void
+  setShowMineable: (enabled: boolean) => void
+  resetGame: () => void
   dispose: () => void
 }
 
@@ -48,14 +51,21 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
 
   const controls = new OrbitControls(cameras.active, renderer.domElement)
   controls.enableDamping = true
-  controls.target.set(0, pit.config.blockSize * 2, 0)
+  controls.target.set(0, pit.config.pitBottomLevel * pit.config.blockSize, 0)
   controls.maxPolarAngle = Math.PI / 2 - 0.05
 
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
   const measureTargets = [...pit.terrain.meshes, pit.ground]
-  const excavation = new Excavation(pit.blocks)
+  let excavation = new Excavation(pit.blocks)
   let interactionMode: InteractionMode = 'select'
+  let digEnabled = true
+  let showMineable = true
+
+  const updateTint = () => {
+    const active = interactionMode === 'dig' && digEnabled && showMineable
+    pit.terrain.setTint(active ? (block) => excavation.canMine(block) : null)
+  }
 
   const handleSelect = () => {
     const block = pickBlock(raycaster, pit.terrain)
@@ -69,6 +79,7 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
   }
 
   const handleDig = () => {
+    if (!digEnabled) return
     const block = pickBlock(raycaster, pit.terrain)
     if (!block) return
 
@@ -76,10 +87,11 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
     if (mined) {
       pit.terrain.removeBlock(block)
       highlight.show(null)
+      updateTint()
     } else {
       highlight.show(block, 'blocked')
     }
-    options.onDig({ block, mined, minedCount: excavation.minedBlocks.length })
+    options.onDig({ block, mined, minedBlocks: [...excavation.minedBlocks] })
   }
 
   const clickHandlers: Record<InteractionMode, () => void> = {
@@ -127,6 +139,22 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
       measurement.clear()
       options.onSelectBlock(null)
       options.onMeasure([])
+      updateTint()
+    },
+    setDigEnabled(enabled) {
+      digEnabled = enabled
+      if (!enabled) highlight.show(null)
+      updateTint()
+    },
+    setShowMineable(enabled) {
+      showMineable = enabled
+      updateTint()
+    },
+    resetGame() {
+      excavation = new Excavation(pit.blocks)
+      pit.terrain.reset()
+      highlight.show(null)
+      updateTint()
       options.onDig(null)
     },
     dispose() {

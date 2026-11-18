@@ -18,6 +18,7 @@ export interface PitConfig {
   size: number
   levels: number
   blockSize: number
+  pitBottomLevel: number
   bottomRadius: number
   benchWidth: number
 }
@@ -26,7 +27,8 @@ export const DEFAULT_PIT: PitConfig = {
   size: 40,
   levels: 8,
   blockSize: 10,
-  bottomRadius: 5,
+  pitBottomLevel: 5,
+  bottomRadius: 4,
   benchWidth: 2,
 }
 
@@ -34,8 +36,8 @@ export const MIN_ORE_GRADE = 0.3
 export const MAX_ORE_GRADE = 2
 
 function isExcavated(x: number, level: number, z: number, config: PitConfig): boolean {
-  if (level === 0) return false
-  const pitRadius = config.bottomRadius + (level - 1) * config.benchWidth
+  if (level < config.pitBottomLevel) return false
+  const pitRadius = config.bottomRadius + (level - config.pitBottomLevel) * config.benchWidth
   return Math.hypot(x, z) < pitRadius
 }
 

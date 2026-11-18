@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Vector3 } from 'three'
 import type { CameraMode } from './camera/CameraRig'
+import { DEFAULT_GOAL, evaluateGame } from './game/goal'
+import { summarize } from './game/summary'
 import type { Block } from './scene/blockModel'
 import { BlockPanel } from './ui/BlockPanel'
-import { DigPanel } from './ui/DigPanel'
+import { GamePanel } from './ui/GamePanel'
 import { MeasurePanel } from './ui/MeasurePanel'
 import { Toolbar } from './ui/Toolbar'
 import type { DigResult, InteractionMode } from './viewer/createViewer'
@@ -15,7 +17,12 @@ export default function App() {
   const [shadows, setShadows] = useState(true)
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null)
   const [measurePoints, setMeasurePoints] = useState<Vector3[]>([])
-  const [digResult, setDigResult] = useState<DigResult | null>(null)
+  const [lastDig, setLastDig] = useState<DigResult | null>(null)
+  const [showMineable, setShowMineable] = useState(true)
+  const [gameId, setGameId] = useState(0)
+
+  const summary = useMemo(() => summarize(lastDig?.minedBlocks ?? []), [lastDig])
+  const status = evaluateGame(summary, DEFAULT_GOAL)
 
   return (
     <>
@@ -23,9 +30,12 @@ export default function App() {
         interactionMode={interactionMode}
         cameraMode={cameraMode}
         shadows={shadows}
+        digEnabled={status === 'playing'}
+        showMineable={showMineable}
+        gameId={gameId}
         onSelectBlock={setSelectedBlock}
         onMeasure={setMeasurePoints}
-        onDig={setDigResult}
+        onDig={setLastDig}
       />
       <Toolbar
         interactionMode={interactionMode}
@@ -39,7 +49,17 @@ export default function App() {
       />
       {interactionMode === 'select' && <BlockPanel block={selectedBlock} />}
       {interactionMode === 'measure' && <MeasurePanel points={measurePoints} />}
-      {interactionMode === 'dig' && <DigPanel result={digResult} />}
+      {interactionMode === 'dig' && (
+        <GamePanel
+          goal={DEFAULT_GOAL}
+          summary={summary}
+          status={status}
+          lastDig={lastDig}
+          showMineable={showMineable}
+          onShowMineableChange={setShowMineable}
+          onNewGame={() => setGameId((id) => id + 1)}
+        />
+      )}
     </>
   )
 }
