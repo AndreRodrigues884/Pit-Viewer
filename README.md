@@ -4,7 +4,7 @@ An interactive 3D viewer for an open-pit mine block model, built with **three.js
 
 Inspect blocks, measure distances, slice through the model, and play a short mining challenge that uses the same precedence rule real pit-optimisation tools rely on.
 
-**Live demo:** https://YOUR-PROJECT.vercel.app
+**Live demo:** [https://YOUR-PROJECT.vercel.app](https://pitviewer.vercel.app/)
 
 ![Extraction challenge](docs/screenshots/extraction-challenge.png)
 
