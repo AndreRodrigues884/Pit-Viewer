@@ -3,6 +3,8 @@ import type { BlockType } from './blockTypes'
 
 export interface Block {
   type: BlockType
+  grade: number
+  size: number
   position: Vector3
 }
 
@@ -17,10 +19,13 @@ export interface PitConfig {
 export const DEFAULT_PIT: PitConfig = {
   size: 40,
   levels: 8,
-  blockSize: 1,
+  blockSize: 10,
   bottomRadius: 5,
   benchWidth: 2,
 }
+
+export const MIN_ORE_GRADE = 0.3
+export const MAX_ORE_GRADE = 2
 
 function isExcavated(x: number, level: number, z: number, config: PitConfig): boolean {
   if (level === 0) return false
@@ -28,13 +33,20 @@ function isExcavated(x: number, level: number, z: number, config: PitConfig): bo
   return Math.hypot(x, z) < pitRadius
 }
 
-function isOre(x: number, level: number, z: number): boolean {
-  return ((x - 4) / 9) ** 2 + ((level - 2) / 3) ** 2 + ((z + 3) / 6) ** 2 < 1
+function oreBodyDistance(x: number, level: number, z: number): number {
+  return Math.sqrt(((x - 4) / 9) ** 2 + ((level - 2) / 3) ** 2 + ((z + 3) / 6) ** 2)
 }
 
-function classify(x: number, level: number, z: number, config: PitConfig): BlockType {
-  if (level === config.levels - 1) return 'soil'
-  return isOre(x, level, z) ? 'ore' : 'waste'
+function gradeAt(distanceFromCore: number): number {
+  const grade = MIN_ORE_GRADE + (MAX_ORE_GRADE - MIN_ORE_GRADE) * (1 - distanceFromCore)
+  return Math.round(grade * 100) / 100
+}
+
+function classify(x: number, level: number, z: number, config: PitConfig) {
+  if (level === config.levels - 1) return { type: 'soil' as const, grade: 0 }
+  const distanceFromCore = oreBodyDistance(x, level, z)
+  if (distanceFromCore < 1) return { type: 'ore' as const, grade: gradeAt(distanceFromCore) }
+  return { type: 'waste' as const, grade: 0 }
 }
 
 export function generateBlocks(config: PitConfig = DEFAULT_PIT): Block[] {
@@ -49,7 +61,8 @@ export function generateBlocks(config: PitConfig = DEFAULT_PIT): Block[] {
         if (isExcavated(x, level, z, config)) continue
 
         blocks.push({
-          type: classify(x, level, z, config),
+          ...classify(x, level, z, config),
+          size: config.blockSize,
           position: new Vector3(x, level + 0.5, z).multiplyScalar(config.blockSize),
         })
       }

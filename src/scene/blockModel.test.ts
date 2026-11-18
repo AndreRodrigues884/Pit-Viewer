@@ -1,0 +1,44 @@
+import { describe, expect, it } from 'vitest'
+import {
+  DEFAULT_PIT,
+  MAX_ORE_GRADE,
+  MIN_ORE_GRADE,
+  generateBlocks,
+  type Block,
+} from './blockModel'
+
+const config = DEFAULT_PIT
+const blocks = generateBlocks(config)
+
+const levelOf = (block: Block) => Math.floor(block.position.y / config.blockSize)
+const blocksOnLevel = (level: number) => blocks.filter((block) => levelOf(block) === level)
+
+describe('generateBlocks', () => {
+  it('keeps the bottom level complete', () => {
+    expect(blocksOnLevel(0)).toHaveLength(config.size * config.size)
+  })
+
+  it('opens the pit wider on every level going up', () => {
+    for (let level = 2; level < config.levels; level++) {
+      expect(blocksOnLevel(level).length).toBeLessThan(blocksOnLevel(level - 1).length)
+    }
+  })
+
+  it('covers the top level with soil', () => {
+    expect(blocksOnLevel(config.levels - 1).every((block) => block.type === 'soil')).toBe(true)
+  })
+
+  it('gives every ore block a grade inside the expected range', () => {
+    const ore = blocks.filter((block) => block.type === 'ore')
+    expect(ore.length).toBeGreaterThan(0)
+    for (const block of ore) {
+      expect(block.grade).toBeGreaterThanOrEqual(MIN_ORE_GRADE)
+      expect(block.grade).toBeLessThanOrEqual(MAX_ORE_GRADE)
+    }
+  })
+
+  it('gives waste and soil no grade', () => {
+    const barren = blocks.filter((block) => block.type !== 'ore')
+    expect(barren.every((block) => block.grade === 0)).toBe(true)
+  })
+})

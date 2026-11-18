@@ -6,6 +6,7 @@ import { createTerrain, type Terrain } from './terrain'
 
 export interface PitScene {
   config: PitConfig
+  extent: number
   scene: THREE.Scene
   terrain: Terrain
   ground: THREE.Mesh
@@ -24,8 +25,9 @@ export function createScene(): PitScene {
   const ground = createGround(extent * 3)
   const lights = createLights(extent)
 
-  const axes = new THREE.AxesHelper(8)
-  axes.position.set(-extent / 2 - 2, 0, extent / 2 + 2)
+  const axesOffset = extent / 2 + config.blockSize * 2
+  const axes = new THREE.AxesHelper(extent * 0.2)
+  axes.position.set(-axesOffset, 0, axesOffset)
 
   scene.add(terrain.group, ground, axes, lights.ambient, lights.directional)
 
@@ -37,5 +39,5 @@ export function createScene(): PitScene {
     lights.directional.dispose()
   }
 
-  return { config, scene, terrain, ground, lights, dispose }
+  return { config, extent, scene, terrain, ground, lights, dispose }
 }

@@ -1,6 +1,6 @@
 import type { Vector3 } from 'three'
 import { distance } from '../measurement/distance'
-import { formatPoint } from './formatPoint'
+import { formatPoint } from './format'
 
 interface MeasurePanelProps {
   points: Vector3[]

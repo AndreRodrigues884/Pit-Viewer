@@ -36,11 +36,11 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
   pit.scene.add(highlight.object, measurement.object)
 
   const cameras = new CameraRig()
-  cameras.perspective.position.set(38, 32, 38)
+  cameras.perspective.position.set(0.95, 0.8, 0.95).multiplyScalar(pit.extent)
 
   const controls = new OrbitControls(cameras.active, renderer.domElement)
   controls.enableDamping = true
-  controls.target.set(0, 2, 0)
+  controls.target.set(0, pit.config.blockSize * 2, 0)
   controls.maxPolarAngle = Math.PI / 2 - 0.05
 
   const raycaster = new THREE.Raycaster()

@@ -3,11 +3,13 @@ import * as THREE from 'three'
 export type CameraMode = 'perspective' | 'orthographic'
 
 const FOV = 50
+const NEAR = 1
+const FAR = 5000
 const HALF_FOV_TAN = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
 
 export class CameraRig {
-  readonly perspective = new THREE.PerspectiveCamera(FOV, 1, 0.1, 1000)
-  readonly orthographic = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
+  readonly perspective = new THREE.PerspectiveCamera(FOV, 1, NEAR, FAR)
+  readonly orthographic = new THREE.OrthographicCamera(-1, 1, 1, -1, NEAR, FAR)
   active: THREE.PerspectiveCamera | THREE.OrthographicCamera = this.perspective
   private aspect = 1
 
