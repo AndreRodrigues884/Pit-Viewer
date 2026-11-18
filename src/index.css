@@ -257,3 +257,7 @@ body {
   border-color: #3f8fb5;
   background: #2f6f8f;
 }
+
+.panel .goal + .hint {
+  margin: -4px 0 10px;
+}
