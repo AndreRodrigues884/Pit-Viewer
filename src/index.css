@@ -1,0 +1,21 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #1b1f24;
+  color: #e6e6e6;
+}
+
+.viewer {
+  position: fixed;
+  inset: 0;
+}
