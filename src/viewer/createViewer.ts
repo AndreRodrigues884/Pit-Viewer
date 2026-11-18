@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { CameraRig, type CameraMode } from '../camera/CameraRig'
+import { Excavation } from '../game/Excavation'
 import { createMeasurement } from '../measurement/createMeasurement'
 import { pickSurfacePoint } from '../measurement/pickSurfacePoint'
 import type { Block } from '../scene/blockModel'
@@ -9,11 +10,18 @@ import { createHighlight } from '../selection/createHighlight'
 import { pickBlock } from '../selection/pickBlock'
 import { listenForClicks, toNormalizedPointer } from './pointer'
 
-export type InteractionMode = 'select' | 'measure'
+export type InteractionMode = 'select' | 'measure' | 'dig'
+
+export interface DigResult {
+  block: Block
+  mined: boolean
+  minedCount: number
+}
 
 export interface ViewerOptions {
   onSelectBlock: (block: Block | null) => void
   onMeasure: (points: THREE.Vector3[]) => void
+  onDig: (result: DigResult | null) => void
 }
 
 export interface ViewerHandle {
@@ -46,6 +54,7 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
   const measureTargets = [...pit.terrain.meshes, pit.ground]
+  const excavation = new Excavation(pit.blocks)
   let interactionMode: InteractionMode = 'select'
 
   const handleSelect = () => {
@@ -59,11 +68,30 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
     if (point) options.onMeasure(measurement.addPoint(point))
   }
 
+  const handleDig = () => {
+    const block = pickBlock(raycaster, pit.terrain)
+    if (!block) return
+
+    const mined = excavation.mine(block)
+    if (mined) {
+      pit.terrain.removeBlock(block)
+      highlight.show(null)
+    } else {
+      highlight.show(block, 'blocked')
+    }
+    options.onDig({ block, mined, minedCount: excavation.minedBlocks.length })
+  }
+
+  const clickHandlers: Record<InteractionMode, () => void> = {
+    select: handleSelect,
+    measure: handleMeasure,
+    dig: handleDig,
+  }
+
   const stopListening = listenForClicks(renderer.domElement, (event) => {
     toNormalizedPointer(event, renderer.domElement, pointer)
     raycaster.setFromCamera(pointer, cameras.active)
-    if (interactionMode === 'select') handleSelect()
-    else handleMeasure()
+    clickHandlers[interactionMode]()
   })
 
   const resize = () => {
@@ -99,6 +127,7 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
       measurement.clear()
       options.onSelectBlock(null)
       options.onMeasure([])
+      options.onDig(null)
     },
     dispose() {
       cancelAnimationFrame(frameId)

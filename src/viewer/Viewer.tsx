@@ -29,6 +29,7 @@ export function Viewer({ cameraMode, shadows, interactionMode, ...callbacks }: V
     const viewer = createViewer(container, {
       onSelectBlock: (block) => callbacksRef.current.onSelectBlock(block),
       onMeasure: (points) => callbacksRef.current.onMeasure(points),
+      onDig: (result) => callbacksRef.current.onDig(result),
     })
     viewerRef.current = viewer
 

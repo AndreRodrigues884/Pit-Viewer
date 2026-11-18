@@ -1,17 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import {
-  DEFAULT_PIT,
-  MAX_ORE_GRADE,
-  MIN_ORE_GRADE,
-  generateBlocks,
-  type Block,
-} from './blockModel'
+import { DEFAULT_PIT, MAX_ORE_GRADE, MIN_ORE_GRADE, generateBlocks } from './blockModel'
 
 const config = DEFAULT_PIT
 const blocks = generateBlocks(config)
 
-const levelOf = (block: Block) => Math.floor(block.position.y / config.blockSize)
-const blocksOnLevel = (level: number) => blocks.filter((block) => levelOf(block) === level)
+const blocksOnLevel = (level: number) => blocks.filter((block) => block.level === level)
 
 describe('generateBlocks', () => {
   it('keeps the bottom level complete', () => {

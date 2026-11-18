@@ -13,6 +13,7 @@ interface ToolbarProps {
 const MODES: { value: InteractionMode; label: string }[] = [
   { value: 'select', label: 'Select' },
   { value: 'measure', label: 'Measure' },
+  { value: 'dig', label: 'Dig' },
 ]
 
 export function Toolbar({

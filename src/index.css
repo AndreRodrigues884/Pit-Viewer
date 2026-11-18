@@ -121,6 +121,11 @@ body {
   border-radius: 3px;
 }
 
+.panel .message {
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
 .panel .positive {
   color: #5fd38d;
 }

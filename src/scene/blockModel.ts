@@ -1,7 +1,13 @@
 import { Vector3 } from 'three'
 import type { BlockType } from './blockTypes'
 
-export interface Block {
+export interface GridCell {
+  i: number
+  j: number
+  level: number
+}
+
+export interface Block extends GridCell {
   type: BlockType
   grade: number
   size: number
@@ -61,6 +67,9 @@ export function generateBlocks(config: PitConfig = DEFAULT_PIT): Block[] {
         if (isExcavated(x, level, z, config)) continue
 
         blocks.push({
+          i,
+          j,
+          level,
           ...classify(x, level, z, config),
           size: config.blockSize,
           position: new Vector3(x, level + 0.5, z).multiplyScalar(config.blockSize),

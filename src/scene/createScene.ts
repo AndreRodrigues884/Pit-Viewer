@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { DEFAULT_PIT, generateBlocks, type PitConfig } from './blockModel'
+import { DEFAULT_PIT, generateBlocks, type Block, type PitConfig } from './blockModel'
 import { createGround } from './ground'
 import { createLights, type Lights } from './lights'
 import { createTerrain, type Terrain } from './terrain'
@@ -7,6 +7,7 @@ import { createTerrain, type Terrain } from './terrain'
 export interface PitScene {
   config: PitConfig
   extent: number
+  blocks: Block[]
   scene: THREE.Scene
   terrain: Terrain
   ground: THREE.Mesh
@@ -21,7 +22,8 @@ export function createScene(): PitScene {
   const scene = new THREE.Scene()
   scene.background = new THREE.Color('#1b1f24')
 
-  const terrain = createTerrain(generateBlocks(config), config.blockSize)
+  const blocks = generateBlocks(config)
+  const terrain = createTerrain(blocks, config.blockSize)
   const ground = createGround(extent * 3)
   const lights = createLights(extent)
 
@@ -39,5 +41,5 @@ export function createScene(): PitScene {
     lights.directional.dispose()
   }
 
-  return { config, extent, scene, terrain, ground, lights, dispose }
+  return { config, extent, blocks, scene, terrain, ground, lights, dispose }
 }
