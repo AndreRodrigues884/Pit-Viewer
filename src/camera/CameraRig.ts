@@ -39,6 +39,15 @@ export class CameraRig {
     this.active = next
   }
 
+  frame(position: THREE.Vector3, target: THREE.Vector3) {
+    this.perspective.position.copy(position)
+    this.perspective.lookAt(target)
+    if (this.active === this.orthographic) {
+      this.active = this.perspective
+      this.setMode('orthographic', target)
+    }
+  }
+
   private visibleHeight(target: THREE.Vector3): number {
     const camera = this.active
     if (camera instanceof THREE.PerspectiveCamera) {

@@ -1,10 +1,17 @@
 import * as THREE from 'three'
-import type { Block } from './blockModel'
+import type { Block, PitConfig } from './blockModel'
 import { BLOCK_COLORS, BLOCK_TYPES, type BlockType } from './blockTypes'
 
 const BLOCK_FILL = 0.96
 const FULL_TINT = new THREE.Color(1, 1, 1)
 const DIM_TINT = new THREE.Color(0.35, 0.35, 0.35)
+
+export type TypeVisibility = Record<BlockType, boolean>
+
+export interface TerrainView {
+  visibleTypes: TypeVisibility
+  section: number
+}
 
 export interface Terrain {
   group: THREE.Group
@@ -13,11 +20,19 @@ export interface Terrain {
   removeBlock: (block: Block) => void
   reset: () => void
   setTint: (isBright: ((block: Block) => boolean) | null) => void
+  setView: (view: TerrainView) => void
+  isVisible: (block: Block) => boolean
   dispose: () => void
 }
 
-export function createTerrain(blocks: Block[], blockSize: number): Terrain {
-  const side = blockSize * BLOCK_FILL
+export function createTerrain(blocks: Block[], config: PitConfig): Terrain {
+  const side = config.blockSize * BLOCK_FILL
+  const sectionPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0)
+  let view: TerrainView = {
+    visibleTypes: { soil: true, waste: true, ore: true },
+    section: 1,
+  }
+  let visibleColumns = config.size
   const geometry = new THREE.BoxGeometry(side, side, side)
   const group = new THREE.Group()
   const matrix = new THREE.Matrix4()
@@ -29,7 +44,12 @@ export function createTerrain(blocks: Block[], blockSize: number): Terrain {
 
   const meshes = BLOCK_TYPES.map((type) => {
     const capacity = blocks.filter((block) => block.type === type).length
-    const material = new THREE.MeshStandardMaterial({ color: BLOCK_COLORS[type], roughness: 0.9 })
+    const material = new THREE.MeshStandardMaterial({
+      color: BLOCK_COLORS[type],
+      roughness: 0.9,
+      clippingPlanes: [sectionPlane],
+      clipShadows: true,
+    })
     const mesh = new THREE.InstancedMesh(geometry, material, capacity)
     mesh.castShadow = true
     mesh.receiveShadow = true
@@ -89,6 +109,15 @@ export function createTerrain(blocks: Block[], blockSize: number): Terrain {
     }
   }
 
+  const setView = (nextView: TerrainView) => {
+    view = nextView
+    visibleColumns = Math.max(1, Math.round(view.section * config.size))
+    sectionPlane.constant = (visibleColumns - config.size / 2) * config.blockSize
+    for (const [type, mesh] of meshByType) mesh.visible = view.visibleTypes[type]
+  }
+
+  const isVisible = (block: Block) => view.visibleTypes[block.type] && block.i < visibleColumns
+
   const dispose = () => {
     geometry.dispose()
     meshes.forEach((mesh) => {
@@ -98,6 +127,17 @@ export function createTerrain(blocks: Block[], blockSize: number): Terrain {
   }
 
   reset()
+  setView(view)
 
-  return { group, meshes, getBlock, removeBlock, reset, setTint, dispose }
+  return {
+    group,
+    meshes,
+    getBlock,
+    removeBlock,
+    reset,
+    setTint,
+    setView,
+    isVisible,
+    dispose,
+  }
 }

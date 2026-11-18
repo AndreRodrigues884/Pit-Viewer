@@ -21,6 +21,7 @@ export interface PitConfig {
   pitBottomLevel: number
   bottomRadius: number
   benchWidth: number
+  oreLevel: number
 }
 
 export const DEFAULT_PIT: PitConfig = {
@@ -30,10 +31,35 @@ export const DEFAULT_PIT: PitConfig = {
   pitBottomLevel: 5,
   bottomRadius: 4,
   benchWidth: 2,
+  oreLevel: 2,
 }
+
+type Range = readonly [min: number, max: number]
+
+export const CONFIG_LIMITS = {
+  size: [20, 60],
+  levels: [4, 12],
+  bottomRadius: [1, 12],
+  benchWidth: [1, 4],
+} as const satisfies Record<string, Range>
 
 export const MIN_ORE_GRADE = 0.3
 export const MAX_ORE_GRADE = 2
+
+const clamp = (value: number, [min, max]: Range) => Math.min(Math.max(Math.round(value), min), max)
+
+export function normalizeConfig(config: PitConfig): PitConfig {
+  const levels = clamp(config.levels, CONFIG_LIMITS.levels)
+  return {
+    ...config,
+    size: clamp(config.size, CONFIG_LIMITS.size),
+    levels,
+    bottomRadius: clamp(config.bottomRadius, CONFIG_LIMITS.bottomRadius),
+    benchWidth: clamp(config.benchWidth, CONFIG_LIMITS.benchWidth),
+    pitBottomLevel: clamp(config.pitBottomLevel, [1, levels - 1]),
+    oreLevel: clamp(config.oreLevel, [0, levels - 2]),
+  }
+}
 
 function isExcavated(x: number, level: number, z: number, config: PitConfig): boolean {
   if (level < config.pitBottomLevel) return false
@@ -41,8 +67,8 @@ function isExcavated(x: number, level: number, z: number, config: PitConfig): bo
   return Math.hypot(x, z) < pitRadius
 }
 
-function oreBodyDistance(x: number, level: number, z: number): number {
-  return Math.sqrt(((x - 4) / 9) ** 2 + ((level - 2) / 3) ** 2 + ((z + 3) / 6) ** 2)
+function oreBodyDistance(x: number, level: number, z: number, oreLevel: number): number {
+  return Math.sqrt(((x - 4) / 9) ** 2 + ((level - oreLevel) / 3) ** 2 + ((z + 3) / 6) ** 2)
 }
 
 function gradeAt(distanceFromCore: number): number {
@@ -52,7 +78,7 @@ function gradeAt(distanceFromCore: number): number {
 
 function classify(x: number, level: number, z: number, config: PitConfig) {
   if (level === config.levels - 1) return { type: 'soil' as const, grade: 0 }
-  const distanceFromCore = oreBodyDistance(x, level, z)
+  const distanceFromCore = oreBodyDistance(x, level, z, config.oreLevel)
   if (distanceFromCore < 1) return { type: 'ore' as const, grade: gradeAt(distanceFromCore) }
   return { type: 'waste' as const, grade: 0 }
 }

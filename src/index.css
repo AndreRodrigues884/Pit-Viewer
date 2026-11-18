@@ -60,7 +60,7 @@ body {
   border-radius: 0 6px 6px 0;
 }
 
-.segmented button[aria-pressed='true'] {
+.toolbar button[aria-pressed='true'] {
   background: #2f6f8f;
   border-color: #3f8fb5;
 }
@@ -192,4 +192,68 @@ body {
 
 .panel .negative {
   color: #ff7b72;
+}
+
+.panel.settings {
+  top: 68px;
+  right: auto;
+  left: 16px;
+  max-height: calc(100vh - 84px);
+  overflow-y: auto;
+}
+
+.panel.settings h2:not(:first-child) {
+  margin-top: 16px;
+}
+
+.type-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.type-filters .toggle {
+  margin: 0 0 8px;
+  color: inherit;
+}
+
+.slider {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  margin-bottom: 8px;
+  color: #9aa4ae;
+}
+
+.slider input {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  accent-color: #3f8fb5;
+}
+
+.slider output {
+  color: #e6e6e6;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.panel .actions button {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #3d444d;
+  border-radius: 6px;
+  background: #262c33;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.panel .actions button.primary {
+  border-color: #3f8fb5;
+  background: #2f6f8f;
 }

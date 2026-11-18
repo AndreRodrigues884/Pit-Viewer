@@ -4,8 +4,9 @@ import { CameraRig, type CameraMode } from '../camera/CameraRig'
 import { Excavation } from '../game/Excavation'
 import { createMeasurement } from '../measurement/createMeasurement'
 import { pickSurfacePoint } from '../measurement/pickSurfacePoint'
-import type { Block } from '../scene/blockModel'
+import type { Block, PitConfig } from '../scene/blockModel'
 import { createScene } from '../scene/createScene'
+import type { TerrainView } from '../scene/terrain'
 import { createHighlight } from '../selection/createHighlight'
 import { pickBlock } from '../selection/pickBlock'
 import { listenForClicks, toNormalizedPointer } from './pointer'
@@ -30,41 +31,70 @@ export interface ViewerHandle {
   setInteractionMode: (mode: InteractionMode) => void
   setDigEnabled: (enabled: boolean) => void
   setShowMineable: (enabled: boolean) => void
+  setTerrainView: (view: TerrainView) => void
+  loadModel: (config: PitConfig) => void
   resetGame: () => void
   dispose: () => void
 }
 
-export function createViewer(container: HTMLElement, options: ViewerOptions): ViewerHandle {
+const CAMERA_OFFSET = new THREE.Vector3(0.75, 0.6, 0.75)
+
+export function createViewer(
+  container: HTMLElement,
+  config: PitConfig,
+  options: ViewerOptions,
+): ViewerHandle {
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap
+  renderer.localClippingEnabled = true
   container.appendChild(renderer.domElement)
 
-  const pit = createScene()
-  const highlight = createHighlight(pit.config.blockSize)
-  const measurement = createMeasurement(pit.config.blockSize * 0.3)
+  let pit = createScene(config)
+  const highlight = createHighlight(config.blockSize)
+  const measurement = createMeasurement(config.blockSize * 0.3)
   pit.scene.add(highlight.object, measurement.object)
 
   const cameras = new CameraRig()
-  cameras.perspective.position.set(0.95, 0.8, 0.95).multiplyScalar(pit.extent)
-
   const controls = new OrbitControls(cameras.active, renderer.domElement)
   controls.enableDamping = true
-  controls.target.set(0, pit.config.pitBottomLevel * pit.config.blockSize, 0)
   controls.maxPolarAngle = Math.PI / 2 - 0.05
 
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
-  const measureTargets = [...pit.terrain.meshes, pit.ground]
   let excavation = new Excavation(pit.blocks)
   let interactionMode: InteractionMode = 'select'
   let digEnabled = true
   let showMineable = true
+  let shadows = true
+  let terrainView: TerrainView = { visibleTypes: { soil: true, waste: true, ore: true }, section: 1 }
+
+  const frameCamera = () => {
+    const target = new THREE.Vector3(0, pit.config.pitBottomLevel * pit.config.blockSize, 0)
+    cameras.frame(CAMERA_OFFSET.clone().multiplyScalar(pit.extent).add(target), target)
+    controls.target.copy(target)
+    controls.object = cameras.active
+    controls.update()
+  }
 
   const updateTint = () => {
     const active = interactionMode === 'dig' && digEnabled && showMineable
     pit.terrain.setTint(active ? (block) => excavation.canMine(block) : null)
+  }
+
+  const clearInteraction = () => {
+    highlight.show(null)
+    measurement.clear()
+    options.onSelectBlock(null)
+    options.onMeasure([])
+  }
+
+  const startGame = () => {
+    excavation = new Excavation(pit.blocks)
+    pit.terrain.reset()
+    updateTint()
+    options.onDig(null)
   }
 
   const handleSelect = () => {
@@ -74,7 +104,7 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
   }
 
   const handleMeasure = () => {
-    const point = pickSurfacePoint(raycaster, measureTargets)
+    const point = pickSurfacePoint(raycaster, pit.terrain, pit.ground)
     if (point) options.onMeasure(measurement.addPoint(point))
   }
 
@@ -114,6 +144,7 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
   const resizeObserver = new ResizeObserver(resize)
   resizeObserver.observe(container)
   resize()
+  frameCamera()
 
   let frameId = 0
   const animate = () => {
@@ -130,15 +161,13 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
       controls.update()
     },
     setShadows(enabled) {
+      shadows = enabled
       pit.lights.directional.castShadow = enabled
     },
     setInteractionMode(mode) {
       if (mode === interactionMode) return
       interactionMode = mode
-      highlight.show(null)
-      measurement.clear()
-      options.onSelectBlock(null)
-      options.onMeasure([])
+      clearInteraction()
       updateTint()
     },
     setDigEnabled(enabled) {
@@ -150,12 +179,27 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
       showMineable = enabled
       updateTint()
     },
+    setTerrainView(view) {
+      terrainView = view
+      pit.terrain.setView(view)
+    },
+    loadModel(nextConfig) {
+      if (nextConfig === pit.config) return
+      pit.scene.remove(highlight.object, measurement.object)
+      pit.dispose()
+
+      pit = createScene(nextConfig)
+      pit.scene.add(highlight.object, measurement.object)
+      pit.terrain.setView(terrainView)
+      pit.lights.directional.castShadow = shadows
+
+      clearInteraction()
+      startGame()
+      frameCamera()
+    },
     resetGame() {
-      excavation = new Excavation(pit.blocks)
-      pit.terrain.reset()
       highlight.show(null)
-      updateTint()
-      options.onDig(null)
+      startGame()
     },
     dispose() {
       cancelAnimationFrame(frameId)

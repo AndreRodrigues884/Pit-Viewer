@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { CameraMode } from '../camera/CameraRig'
+import type { PitConfig } from '../scene/blockModel'
+import type { TerrainView } from '../scene/terrain'
 import {
   createViewer,
   type InteractionMode,
@@ -8,6 +10,8 @@ import {
 } from './createViewer'
 
 interface ViewerProps extends ViewerOptions {
+  pitConfig: PitConfig
+  terrainView: TerrainView
   cameraMode: CameraMode
   shadows: boolean
   interactionMode: InteractionMode
@@ -17,6 +21,8 @@ interface ViewerProps extends ViewerOptions {
 }
 
 export function Viewer({
+  pitConfig,
+  terrainView,
   cameraMode,
   shadows,
   interactionMode,
@@ -28,6 +34,7 @@ export function Viewer({
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<ViewerHandle | null>(null)
   const callbacksRef = useRef(callbacks)
+  const initialConfigRef = useRef(pitConfig)
 
   useEffect(() => {
     callbacksRef.current = callbacks
@@ -37,7 +44,7 @@ export function Viewer({
     const container = containerRef.current
     if (!container) return
 
-    const viewer = createViewer(container, {
+    const viewer = createViewer(container, initialConfigRef.current, {
       onSelectBlock: (block) => callbacksRef.current.onSelectBlock(block),
       onMeasure: (points) => callbacksRef.current.onMeasure(points),
       onDig: (result) => callbacksRef.current.onDig(result),
@@ -49,6 +56,14 @@ export function Viewer({
       viewerRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    viewerRef.current?.loadModel(pitConfig)
+  }, [pitConfig])
+
+  useEffect(() => {
+    viewerRef.current?.setTerrainView(terrainView)
+  }, [terrainView])
 
   useEffect(() => {
     viewerRef.current?.setCameraMode(cameraMode)

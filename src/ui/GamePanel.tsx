@@ -10,6 +10,7 @@ interface GamePanelProps {
   summary: MiningSummary
   status: GameStatus
   lastDig: DigResult | null
+  customModel: boolean
   showMineable: boolean
   onShowMineableChange: (enabled: boolean) => void
   onNewGame: () => void
@@ -20,6 +21,7 @@ export function GamePanel({
   summary,
   status,
   lastDig,
+  customModel,
   showMineable,
   onShowMineableChange,
   onNewGame,
@@ -33,6 +35,9 @@ export function GamePanel({
         Mine <strong>{formatTonnes(goal.oreTonnes)}</strong> of ore using at most{' '}
         <strong>{goal.maxBlocks} blocks</strong>, and finish with a profit.
       </p>
+      {customModel && (
+        <p className="hint">Custom model: the goal is tuned for the default settings.</p>
+      )}
 
       <div className="progress" role="progressbar" aria-valuenow={Math.round(progress * 100)}>
         <div className="progress-fill" style={{ width: `${progress * 100}%` }} />

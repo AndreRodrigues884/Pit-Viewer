@@ -5,9 +5,11 @@ interface ToolbarProps {
   interactionMode: InteractionMode
   cameraMode: CameraMode
   shadows: boolean
+  settingsOpen: boolean
   onInteractionModeChange: (mode: InteractionMode) => void
   onToggleCamera: () => void
   onToggleShadows: () => void
+  onToggleSettings: () => void
 }
 
 const MODES: { value: InteractionMode; label: string }[] = [
@@ -20,9 +22,11 @@ export function Toolbar({
   interactionMode,
   cameraMode,
   shadows,
+  settingsOpen,
   onInteractionModeChange,
   onToggleCamera,
   onToggleShadows,
+  onToggleSettings,
 }: ToolbarProps) {
   return (
     <div className="toolbar">
@@ -43,6 +47,9 @@ export function Toolbar({
       </button>
       <button type="button" onClick={onToggleShadows} aria-pressed={shadows}>
         Shadows: {shadows ? 'On' : 'Off'}
+      </button>
+      <button type="button" onClick={onToggleSettings} aria-pressed={settingsOpen}>
+        Settings
       </button>
     </div>
   )
