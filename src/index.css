@@ -43,6 +43,28 @@ body {
   background: #313841;
 }
 
+.segmented {
+  display: flex;
+}
+
+.segmented button {
+  border-radius: 0;
+}
+
+.segmented button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.segmented button:last-child {
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: #2f6f8f;
+  border-color: #3f8fb5;
+}
+
 .panel {
   position: fixed;
   top: 16px;
@@ -85,6 +107,12 @@ body {
 .panel .hint {
   margin: 0;
   color: #9aa4ae;
+}
+
+.panel .distance {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4dd2ff;
 }
 
 .swatch {

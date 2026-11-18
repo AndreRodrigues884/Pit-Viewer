@@ -1,5 +1,6 @@
 import type { Block } from '../scene/blockModel'
 import { BLOCK_COLORS, BLOCK_LABELS } from '../scene/blockTypes'
+import { formatPoint } from './formatPoint'
 
 interface BlockPanelProps {
   block: Block | null
@@ -17,10 +18,7 @@ export function BlockPanel({ block }: BlockPanelProps) {
             {BLOCK_LABELS[block.type]}
           </dd>
           <dt>Position</dt>
-          <dd>
-            X {block.position.x.toFixed(1)} · Y {block.position.y.toFixed(1)} · Z{' '}
-            {block.position.z.toFixed(1)}
-          </dd>
+          <dd>{formatPoint(block.position)}</dd>
         </dl>
       ) : (
         <p className="hint">Click a block to inspect it.</p>

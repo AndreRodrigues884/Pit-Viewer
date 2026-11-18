@@ -1,29 +1,34 @@
 import { useEffect, useRef } from 'react'
 import type { CameraMode } from '../camera/CameraRig'
-import type { Block } from '../scene/blockModel'
-import { createViewer, type ViewerHandle } from './createViewer'
+import {
+  createViewer,
+  type InteractionMode,
+  type ViewerHandle,
+  type ViewerOptions,
+} from './createViewer'
 
-interface ViewerProps {
+interface ViewerProps extends ViewerOptions {
   cameraMode: CameraMode
   shadows: boolean
-  onSelectBlock: (block: Block | null) => void
+  interactionMode: InteractionMode
 }
 
-export function Viewer({ cameraMode, shadows, onSelectBlock }: ViewerProps) {
+export function Viewer({ cameraMode, shadows, interactionMode, ...callbacks }: ViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<ViewerHandle | null>(null)
-  const onSelectBlockRef = useRef(onSelectBlock)
+  const callbacksRef = useRef(callbacks)
 
   useEffect(() => {
-    onSelectBlockRef.current = onSelectBlock
-  }, [onSelectBlock])
+    callbacksRef.current = callbacks
+  })
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     const viewer = createViewer(container, {
-      onSelectBlock: (block) => onSelectBlockRef.current(block),
+      onSelectBlock: (block) => callbacksRef.current.onSelectBlock(block),
+      onMeasure: (points) => callbacksRef.current.onMeasure(points),
     })
     viewerRef.current = viewer
 
@@ -40,6 +45,10 @@ export function Viewer({ cameraMode, shadows, onSelectBlock }: ViewerProps) {
   useEffect(() => {
     viewerRef.current?.setShadows(shadows)
   }, [shadows])
+
+  useEffect(() => {
+    viewerRef.current?.setInteractionMode(interactionMode)
+  }, [interactionMode])
 
   return <div ref={containerRef} className="viewer" />
 }

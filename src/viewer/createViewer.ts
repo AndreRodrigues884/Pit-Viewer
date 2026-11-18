@@ -1,19 +1,25 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { CameraRig, type CameraMode } from '../camera/CameraRig'
+import { createMeasurement } from '../measurement/createMeasurement'
+import { pickSurfacePoint } from '../measurement/pickSurfacePoint'
 import type { Block } from '../scene/blockModel'
 import { createScene } from '../scene/createScene'
 import { createHighlight } from '../selection/createHighlight'
 import { pickBlock } from '../selection/pickBlock'
 import { listenForClicks, toNormalizedPointer } from './pointer'
 
+export type InteractionMode = 'select' | 'measure'
+
 export interface ViewerOptions {
   onSelectBlock: (block: Block | null) => void
+  onMeasure: (points: THREE.Vector3[]) => void
 }
 
 export interface ViewerHandle {
   setCameraMode: (mode: CameraMode) => void
   setShadows: (enabled: boolean) => void
+  setInteractionMode: (mode: InteractionMode) => void
   dispose: () => void
 }
 
@@ -26,7 +32,8 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
 
   const pit = createScene()
   const highlight = createHighlight(pit.config.blockSize)
-  pit.scene.add(highlight.object)
+  const measurement = createMeasurement(pit.config.blockSize * 0.3)
+  pit.scene.add(highlight.object, measurement.object)
 
   const cameras = new CameraRig()
   cameras.perspective.position.set(38, 32, 38)
@@ -38,13 +45,25 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
 
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
+  const measureTargets = [...pit.terrain.meshes, pit.ground]
+  let interactionMode: InteractionMode = 'select'
+
+  const handleSelect = () => {
+    const block = pickBlock(raycaster, pit.terrain)
+    highlight.show(block)
+    options.onSelectBlock(block)
+  }
+
+  const handleMeasure = () => {
+    const point = pickSurfacePoint(raycaster, measureTargets)
+    if (point) options.onMeasure(measurement.addPoint(point))
+  }
 
   const stopListening = listenForClicks(renderer.domElement, (event) => {
     toNormalizedPointer(event, renderer.domElement, pointer)
     raycaster.setFromCamera(pointer, cameras.active)
-    const block = pickBlock(raycaster, pit.terrain)
-    highlight.show(block)
-    options.onSelectBlock(block)
+    if (interactionMode === 'select') handleSelect()
+    else handleMeasure()
   })
 
   const resize = () => {
@@ -73,12 +92,21 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Vi
     setShadows(enabled) {
       pit.lights.directional.castShadow = enabled
     },
+    setInteractionMode(mode) {
+      if (mode === interactionMode) return
+      interactionMode = mode
+      highlight.show(null)
+      measurement.clear()
+      options.onSelectBlock(null)
+      options.onMeasure([])
+    },
     dispose() {
       cancelAnimationFrame(frameId)
       stopListening()
       resizeObserver.disconnect()
       controls.dispose()
       highlight.dispose()
+      measurement.dispose()
       pit.dispose()
       renderer.dispose()
       container.removeChild(renderer.domElement)

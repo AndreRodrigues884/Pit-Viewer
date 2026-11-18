@@ -8,6 +8,7 @@ export interface PitScene {
   config: PitConfig
   scene: THREE.Scene
   terrain: Terrain
+  ground: THREE.Mesh
   lights: Lights
   dispose: () => void
 }
@@ -36,5 +37,5 @@ export function createScene(): PitScene {
     lights.directional.dispose()
   }
 
-  return { config, scene, terrain, lights, dispose }
+  return { config, scene, terrain, ground, lights, dispose }
 }
